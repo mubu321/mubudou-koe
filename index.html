@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>母音変換スピーチ</title>
+</head>
+<body>
+    <h2>話す内容を入力してください</h2>
+    <input type="text" id="textInput" placeholder="ここに入力">
+    <button id="speakButton">話す</button>
+    <p id="status"></p>
+
+    <script>
+        let audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        let audioBuffers = {};
+        let pitchShift = 1.0;
+
+        const audioFiles = {
+            "あ": "audio/a.mp3",
+            "い": "audio/i.mp3",
+            "う": "audio/u.mp3",
+            "え": "audio/e.mp3",
+            "お": "audio/o.mp3"
+        };
+
+        const vowelMap = {
+            "あ": "あ", "い": "い", "う": "う", "え": "え", "お": "お",
+            "か": "あ", "き": "い", "く": "う", "け": "え", "こ": "お",
+            "さ": "あ", "し": "い", "す": "う", "せ": "え", "そ": "お",
+            "た": "あ", "ち": "い", "つ": "う", "て": "え", "と": "お",
+            "な": "あ", "に": "い", "ぬ": "う", "ね": "え", "の": "お",
+            "は": "あ", "ひ": "い", "ふ": "う", "へ": "え", "ほ": "お",
+            "ま": "あ", "み": "い", "む": "う", "め": "え", "も": "お",
+            "や": "あ", "ゆ": "う", "よ": "お",
+            "ら": "あ", "り": "い", "る": "う", "れ": "え", "ろ": "お",
+            "わ": "あ", "を": "お", "ん": "ん",
+            "が": "あ", "ぎ": "い", "ぐ": "う", "げ": "え", "ご": "お",
+            "ざ": "あ", "じ": "い", "ず": "う", "ぜ": "え", "ぞ": "お",
+            "だ": "あ", "ぢ": "い", "づ": "う", "で": "え", "ど": "お",
+            "ば": "あ", "び": "い", "ぶ": "う", "べ": "え", "ぼ": "お",
+            "ぱ": "あ", "ぴ": "い", "ぷ": "う", "ぺ": "え", "ぽ": "お"
+        };
+
+        async function loadAudio(vowel, url) {
+            try {
+                let response = await fetch(url);
+                if (!response.ok) throw new Error(`ファイル ${url} が見つかりません`);
+                let arrayBuffer = await response.arrayBuffer();
+                let buffer = await audioContext.decodeAudioData(arrayBuffer);
+                audioBuffers[vowel] = buffer;
+            } catch (error) {
+                document.getElementById("status").textContent = `❌ 音声ファイルエラー: ${error.message}`;
+            }
+        }
+
+        async function loadAllAudio() {
+            for (let vowel in audioFiles) {
+                await loadAudio(vowel, audioFiles[vowel]);
+            }
+            document.getElementById("status").textContent = "✅ 音声ファイルの準備が完了しました";
+        }
+
+        document.getElementById("speakButton").addEventListener("click", function() {
+            if (audioContext.state === "suspended") {
+                audioContext.resume().then(() => {
+                    console.log("AudioContext resumed.");
+                });
+            }
+
+            let text = document.getElementById("textInput").value;
+            if (text) {
+                let vowelsOnly = convertToVowels(text);
+                playVowelSounds(vowelsOnly);
+            }
+        });
+
+        function convertToVowels(text) {
+            return text.split("").map(char => vowelMap[char] || "").join("");
+        }
+
+        function playVowelSounds(vowelString) {
+            if (!vowelString) return;
+
+            let time = audioContext.currentTime;
+            for (let i = 0; i < vowelString.length; i++) {
+                let vowel = vowelString[i];
+                if (audioBuffers[vowel]) {
+                    playSound(audioBuffers[vowel], time, pitchShift);
+                    time += 0.2;
+                    
+                    pitchShift *= 1.01;
+                    if (pitchShift > 1.3) pitchShift = 1.0;
+                }
+            }
+        }
+
+        function playSound(buffer, startTime, playbackRate) {
+            let source = audioContext.createBufferSource();
+            source.buffer = buffer;
+            source.playbackRate.value = playbackRate;
+
+            source.connect(audioContext.destination);
+            source.start(startTime);
+        }
+
+        loadAllAudio();
+    </script>
+</body>
+</html>
