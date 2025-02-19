@@ -87,7 +87,7 @@
                 let vowel = vowelString[i];
                 if (audioBuffers[vowel]) {
                     playSound(audioBuffers[vowel], time, pitchShift);
-                    time += 0.2;
+                    time += 0.1;
                     
                     pitchShift *= 1.01;
                     if (pitchShift > 1.3) pitchShift = 1.0;
