@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>むすぶチャットボット</title>
+    <title>むすぶチャットボット（あいうえおボイス）</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -157,7 +157,7 @@
 <body>
     <div class="chat-container">
         <div class="chat-header">
-            むすぶAI
+            🎮 むすぶチャットボット 🎮
             <div class="status-indicator" id="statusIndicator"></div>
         </div>
         <div class="chat-messages" id="messages">
@@ -171,12 +171,7 @@
         </div>
     </div>
     <script>
-        // ▼▼▼ 音声合成のための変数と初期化 ▼▼▼
-        let audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        let audioBuffers = {};
-        let pitchShift = 1.0;
-
-        // シンプルな母音音声ファイルマップ（audio/ 配下に用意）
+        // ▼▼▼ あいうえお音声合成部分 ▼▼▼
         const audioFiles = {
             "あ": "audio/a.mp3",
             "い": "audio/i.mp3",
@@ -184,80 +179,72 @@
             "え": "audio/e.mp3",
             "お": "audio/o.mp3"
         };
+        let audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        let audioBuffers = {};
 
-        // ひらがな→母音変換
         const vowelMap = {
-            "あ": "あ", "い": "い", "う": "う", "え": "え", "お": "お",
-            "か": "あ", "き": "い", "く": "う", "け": "え", "こ": "お",
-            "さ": "あ", "し": "い", "す": "う", "せ": "え", "そ": "お",
-            "た": "あ", "ち": "い", "つ": "う", "て": "え", "と": "お",
-            "な": "あ", "に": "い", "ぬ": "う", "ね": "え", "の": "お",
-            "は": "あ", "ひ": "い", "ふ": "う", "へ": "え", "ほ": "お",
-            "ま": "あ", "み": "い", "む": "う", "め": "え", "も": "お",
-            "や": "あ", "ゆ": "う", "よ": "お",
-            "ら": "あ", "り": "い", "る": "う", "れ": "え", "ろ": "お",
-            "わ": "あ", "を": "お", "ん": "ん",
-            "が": "あ", "ぎ": "い", "ぐ": "う", "げ": "え", "ご": "お",
-            "ざ": "あ", "じ": "い", "ず": "う", "ぜ": "え", "ぞ": "お",
-            "だ": "あ", "ぢ": "い", "づ": "う", "で": "え", "ど": "お",
-            "ば": "あ", "び": "い", "ぶ": "う", "べ": "え", "ぼ": "お",
-            "ぱ": "あ", "ぴ": "い", "ぷ": "う", "ぺ": "え", "ぽ": "お"
+            "あ":"あ","い":"い","う":"う","え":"え","お":"お",
+            "か":"あ","き":"い","く":"う","け":"え","こ":"お",
+            "さ":"あ","し":"い","す":"う","せ":"え","そ":"お",
+            "た":"あ","ち":"い","つ":"う","て":"え","と":"お",
+            "な":"あ","に":"い","ぬ":"う","ね":"え","の":"お",
+            "は":"あ","ひ":"い","ふ":"う","へ":"え","ほ":"お",
+            "ま":"あ","み":"い","む":"う","め":"え","も":"お",
+            "や":"あ","ゆ":"う","よ":"お",
+            "ら":"あ","り":"い","る":"う","れ":"え","ろ":"お",
+            "わ":"あ","を":"お","ん":"ん",
+            "が":"あ","ぎ":"い","ぐ":"う","げ":"え","ご":"お",
+            "ざ":"あ","じ":"い","ず":"う","ぜ":"え","ぞ":"お",
+            "だ":"あ","ぢ":"い","づ":"う","で":"え","ど":"お",
+            "ば":"あ","び":"い","ぶ":"う","べ":"え","ぼ":"お",
+            "ぱ":"あ","ぴ":"い","ぷ":"う","ぺ":"え","ぽ":"お",
+            "ぁ":"あ","ぃ":"い","ぅ":"う","ぇ":"え","ぉ":"お"
         };
 
-        // 音声ファイル読み込み
-        async function loadAudio(vowel, url) {
-            try {
-                let response = await fetch(url);
-                if (!response.ok) throw new Error(`ファイル ${url} が見つかりません`);
-                let arrayBuffer = await response.arrayBuffer();
-                let buffer = await audioContext.decodeAudioData(arrayBuffer);
-                audioBuffers[vowel] = buffer;
-            } catch (error) {
-                // チャット欄にエラー表示
-                addMessage(`❌ 音声ファイルエラー: ${error.message}`, false, true);
-            }
-        }
         async function loadAllAudio() {
-            for (let vowel in audioFiles) {
-                await loadAudio(vowel, audioFiles[vowel]);
+            for (const v of Object.keys(audioFiles)) {
+                try {
+                    let res = await fetch(audioFiles[v]);
+                    if (!res.ok) continue;
+                    let ab = await res.arrayBuffer();
+                    audioBuffers[v] = await audioContext.decodeAudioData(ab);
+                } catch(e) {}
             }
         }
-
-        function convertToVowels(text) {
-            return text.split("").map(char => vowelMap[char] || "").join("");
+        function toVowelString(text) {
+            return text.split("").map(c => vowelMap[c] || "").join("");
         }
-
-        function playVowelSounds(vowelString) {
-            if (!vowelString) return;
-            let time = audioContext.currentTime;
-            for (let i = 0; i < vowelString.length; i++) {
-                let vowel = vowelString[i];
-                if (audioBuffers[vowel]) {
-                    playSound(audioBuffers[vowel], time, pitchShift);
-                    time += 0.1;
-                    pitchShift *= 1.01;
-                    if (pitchShift > 1.2) pitchShift = 1.0;
-                }
+        function playVowelSounds(vowelString, idx = 0) {
+            if (!vowelString || idx >= vowelString.length) return;
+            let v = vowelString[idx];
+            if (v === "ん") {
+                // 「ん」音声ファイルがあればここで再生、なければ無音スキップ
+                playVowelSounds(vowelString, idx + 1);
+                return;
             }
-        }
-        function playSound(buffer, startTime, playbackRate) {
+            let buffer = audioBuffers[v];
+            if (!buffer) {
+                playVowelSounds(vowelString, idx + 1);
+                return;
+            }
             let source = audioContext.createBufferSource();
             source.buffer = buffer;
-            source.playbackRate.value = playbackRate;
             source.connect(audioContext.destination);
-            source.start(startTime);
+            source.start();
+            source.onended = () => playVowelSounds(vowelString, idx + 1);
         }
-        // ▲▲▲ 音声合成ここまで ▲▲▲
+        function musubuVoiceSpeak(text) {
+            if (audioContext.state === "suspended") audioContext.resume();
+            let vowels = toVowelString(text);
+            playVowelSounds(vowels, 0);
+        }
+        // ▲▲▲ あいうえお音声合成ここまで ▲▲▲
 
         // ▼▼▼ チャットボット本体 ▼▼▼
         const messageInput = document.getElementById('messageInput');
         const messagesContainer = document.getElementById('messages');
         const sendButton = document.getElementById('sendButton');
         const statusIndicator = document.getElementById('statusIndicator');
-        // ... むすぶの応答データベース（省略せずmusubu_chatbot.htmlからコピペ） ...
-        // ... responses 変数は長いので省略、前のコードと同じものを使用 ...
-        // ここには responses の定義を丸ごとコピペしてください
-        // ▼▼▼ responses の内容（省略せず貼ること）▼▼▼
         const responses = {
             '性別': ['どっちでもないよ！', 'オレに性別はない！', '無性別だぜ！', 'そんなの関係ない！', '性別とか古い！'],
             '年齢': ['オレに年齢はない！', '存在しないよ！', '年齢？何それ？', '永遠に若い！', '時を超越してる！'],
@@ -301,21 +288,14 @@
             '今': ['今は神の時間！', '今が最高！', '今この瞬間！', '今を生きる！', '現在進行形！'],
             default: [
                 'オレは神だからね！', '何それ？知らん！', 'まあいいや！', 'どうでもいいし！',
-                'オレは神', '何それ？知らん！', 'まあいいや！', 'どうでもいいし！',
                 'そんなことより！', 'オレ最高！', '神すぎる！', 'テンション上がる！',
                 'むすぶちゃんねる！', 'ケモナー最高！', 'マイクラやろう！', '唐辛子食べたい！',
-                'むすぶちゃんねる！', 'いええええす', 'マイクラやろう', '唐辛子食べたい',
                 'オレに任せろ！', '適当でいいよ！', '脱線しよう！', 'わけわからん！',
                 'オレが一番！', 'なんでもいいや！', 'テキトーでいこう！', 'ハイテンション！',
-                'オレが一番！', 'ハハハハハ', 'テキトーでいこう！', 'ハイテンション！',
                 'ゲームしよう！', 'おもしろいね！', 'よくわからん！', 'オレに聞くな！',
                 '勝手にしろ！'
-                'うぃーす'
             ]
         };
-        // ▲▲ responses 定義ここまで ▲▲
-
-        // ... 以下チャットボットのロジック（musubu_chatbot.htmlと同じ） ...
         let lastActivityTime = Date.now();
         let boredomInterval = null;
         let randomTalkInterval = null;
@@ -408,15 +388,7 @@
             messageDiv.textContent = message;
             messagesContainer.appendChild(messageDiv);
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
-            // むすぶの声（botメッセージのみ）
-            if (!isUser && !isSystem) {
-                // AudioContextがsuspendedならresume（Safari対応）
-                if (audioContext.state === "suspended") {
-                    audioContext.resume();
-                }
-                const vowelsOnly = convertToVowels(message);
-                playVowelSounds(vowelsOnly);
-            }
+            if (!isUser && !isSystem) musubuVoiceSpeak(message); // bot返事時にあいうえお合成
         }
         function sendMessage() {
             const message = messageInput.value.trim();
@@ -435,18 +407,16 @@
                 addMessage(response);
             }, delay);
         }
-        // エンターキー送信
         messageInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter' && !messageInput.disabled) sendMessage();
         });
-        // 初期化
         function initialize() {
             messageInput.focus();
             checkOnlineStatus();
             startBoredomTimer();
             startRandomTalk();
             setInterval(checkOnlineStatus, 60000);
-            loadAllAudio(); // 声データも初期化時にロード
+            loadAllAudio();
         }
         document.addEventListener('DOMContentLoaded', initialize);
         document.addEventListener('visibilitychange', function() {
