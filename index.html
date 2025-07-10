@@ -3,16 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>むすぶAI</title>
+    <title>むすぶチャットボット</title>
     <style>
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>むすぶチャットボット（声付き）</title>
-    <style>
-        /* ... スタイルは前回と同じ ... */
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #2c3e50, #34495e);
@@ -165,7 +157,7 @@
 <body>
     <div class="chat-container">
         <div class="chat-header">
-            🎮 むすぶチャットボット 🎮
+            むすぶAI
             <div class="status-indicator" id="statusIndicator"></div>
         </div>
         <div class="chat-messages" id="messages">
@@ -183,6 +175,8 @@
         let audioContext = new (window.AudioContext || window.webkitAudioContext)();
         let audioBuffers = {};
         let pitchShift = 1.0;
+
+        // シンプルな母音音声ファイルマップ（audio/ 配下に用意）
         const audioFiles = {
             "あ": "audio/a.mp3",
             "い": "audio/i.mp3",
@@ -190,6 +184,8 @@
             "え": "audio/e.mp3",
             "お": "audio/o.mp3"
         };
+
+        // ひらがな→母音変換
         const vowelMap = {
             "あ": "あ", "い": "い", "う": "う", "え": "え", "お": "お",
             "か": "あ", "き": "い", "く": "う", "け": "え", "こ": "お",
@@ -207,6 +203,8 @@
             "ば": "あ", "び": "い", "ぶ": "う", "べ": "え", "ぼ": "お",
             "ぱ": "あ", "ぴ": "い", "ぷ": "う", "ぺ": "え", "ぽ": "お"
         };
+
+        // 音声ファイル読み込み
         async function loadAudio(vowel, url) {
             try {
                 let response = await fetch(url);
@@ -215,6 +213,7 @@
                 let buffer = await audioContext.decodeAudioData(arrayBuffer);
                 audioBuffers[vowel] = buffer;
             } catch (error) {
+                // チャット欄にエラー表示
                 addMessage(`❌ 音声ファイルエラー: ${error.message}`, false, true);
             }
         }
@@ -223,9 +222,11 @@
                 await loadAudio(vowel, audioFiles[vowel]);
             }
         }
+
         function convertToVowels(text) {
             return text.split("").map(char => vowelMap[char] || "").join("");
         }
+
         function playVowelSounds(vowelString) {
             if (!vowelString) return;
             let time = audioContext.currentTime;
@@ -253,10 +254,11 @@
         const messagesContainer = document.getElementById('messages');
         const sendButton = document.getElementById('sendButton');
         const statusIndicator = document.getElementById('statusIndicator');
-        // responsesは前回と同じ（省略）
-
+        // ... むすぶの応答データベース（省略せずmusubu_chatbot.htmlからコピペ） ...
+        // ... responses 変数は長いので省略、前のコードと同じものを使用 ...
+        // ここには responses の定義を丸ごとコピペしてください
+        // ▼▼▼ responses の内容（省略せず貼ること）▼▼▼
         const responses = {
-            // ...（省略：元のresponsesをコピペしてください）...
             '性別': ['どっちでもないよ！', 'オレに性別はない！', '無性別だぜ！', 'そんなの関係ない！', '性別とか古い！'],
             '年齢': ['オレに年齢はない！', '存在しないよ！', '年齢？何それ？', '永遠に若い！', '時を超越してる！'],
             '名前': ['むすぶだよ！', 'むぶでもいいよ！', 'オレは神むすぶ！', 'むすぶちゃんねる！', '神の名前だぜ！'],
@@ -307,10 +309,13 @@
                 '勝手にしろ！'
             ]
         };
+        // ▲▲ responses 定義ここまで ▲▲
 
+        // ... 以下チャットボットのロジック（musubu_chatbot.htmlと同じ） ...
         let lastActivityTime = Date.now();
         let boredomInterval = null;
         let randomTalkInterval = null;
+        let wasOfflineMessageSent = false;
 
         function isBusinessHours() {
             const now = new Date();
@@ -368,6 +373,16 @@
             lastActivityTime = Date.now();
         }
         function checkOnlineStatus() {
+            const currentlyOnline = isBusinessHours();
+            const wasOnline = localStorage.getItem('musubu_was_online') === 'true';
+            if (currentlyOnline && !wasOnline && wasOfflineMessageSent) {
+                addMessage('今オンラインだよ！！！！', false, true);
+                wasOfflineMessageSent = false;
+            } else if (!currentlyOnline && wasOnline) {
+                addMessage('オフラインになったよ〜また後で！', false, true);
+                wasOfflineMessageSent = true;
+            }
+            localStorage.setItem('musubu_was_online', currentlyOnline.toString());
             updateStatusIndicator();
         }
         function getResponse(input) {
@@ -391,6 +406,7 @@
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
             // むすぶの声（botメッセージのみ）
             if (!isUser && !isSystem) {
+                // AudioContextがsuspendedならresume（Safari対応）
                 if (audioContext.state === "suspended") {
                     audioContext.resume();
                 }
@@ -404,7 +420,8 @@
             addMessage(message, true);
             messageInput.value = '';
             if (!isBusinessHours()) {
-                // オフライン時は何も返さない（旧仕様の応答メッセージを削除）
+                addMessage('今はオフラインだよ〜14:50-21:10の間に話しかけてね！', false, true);
+                wasOfflineMessageSent = true;
                 return;
             }
             updateLastActivity();
@@ -414,16 +431,18 @@
                 addMessage(response);
             }, delay);
         }
+        // エンターキー送信
         messageInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter' && !messageInput.disabled) sendMessage();
         });
+        // 初期化
         function initialize() {
             messageInput.focus();
             checkOnlineStatus();
             startBoredomTimer();
             startRandomTalk();
             setInterval(checkOnlineStatus, 60000);
-            loadAllAudio();
+            loadAllAudio(); // 声データも初期化時にロード
         }
         document.addEventListener('DOMContentLoaded', initialize);
         document.addEventListener('visibilitychange', function() {
