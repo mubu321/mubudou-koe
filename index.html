@@ -15,6 +15,7 @@
             justify-content: center;
             align-items: center;
         }
+        
         .chat-container {
             background: #ecf0f1;
             border-radius: 20px;
@@ -26,6 +27,7 @@
             flex-direction: column;
             overflow: hidden;
         }
+        
         .chat-header {
             background: linear-gradient(135deg, #95a5a6, #7f8c8d);
             color: white;
@@ -34,27 +36,8 @@
             font-size: 18px;
             font-weight: bold;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-            position: relative;
         }
-        .status-indicator {
-            position: absolute;
-            top: 10px;
-            right: 20px;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: #27ae60;
-            animation: pulse 2s infinite;
-        }
-        .status-indicator.offline {
-            background: #e74c3c;
-            animation: none;
-        }
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
-        }
+        
         .chat-messages {
             flex: 1;
             overflow-y: auto;
@@ -64,6 +47,7 @@
             flex-direction: column;
             gap: 15px;
         }
+        
         .message {
             max-width: 80%;
             padding: 12px 16px;
@@ -72,33 +56,28 @@
             line-height: 1.4;
             animation: fadeIn 0.3s ease-in;
         }
+        
         .user-message {
             background: #34495e;
             color: white;
             align-self: flex-end;
             border-bottom-right-radius: 6px;
         }
+        
         .bot-message {
             background: #95a5a6;
             color: white;
             align-self: flex-start;
             border-bottom-left-radius: 6px;
         }
-        .system-message {
-            background: #e67e22;
-            color: white;
-            align-self: center;
-            font-size: 12px;
-            border-radius: 12px;
-            padding: 8px 12px;
-            opacity: 0.8;
-        }
+        
         .input-area {
             display: flex;
             padding: 20px;
             background: #ecf0f1;
             border-top: 1px solid #95a5a6;
         }
+        
         .input-field {
             flex: 1;
             padding: 12px 16px;
@@ -109,14 +88,11 @@
             background: white;
             transition: border-color 0.3s ease;
         }
+        
         .input-field:focus {
             border-color: #7f8c8d;
         }
-        .input-field:disabled {
-            background: #ecf0f1;
-            color: #7f8c8d;
-            cursor: not-allowed;
-        }
+        
         .send-button {
             background: linear-gradient(135deg, #95a5a6, #7f8c8d);
             color: white;
@@ -130,172 +106,217 @@
             transition: all 0.3s ease;
             text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
         }
-        .send-button:hover:not(:disabled) {
+        
+        .send-button:hover {
             background: linear-gradient(135deg, #7f8c8d, #95a5a6);
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         }
+        
         .send-button:active {
             transform: translateY(0);
         }
-        .send-button:disabled {
-            background: #bdc3c7;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
+        
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #ecf0f1; }
-        ::-webkit-scrollbar-thumb { background: #95a5a6; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #7f8c8d; }
+        
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #ecf0f1;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #95a5a6;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #7f8c8d;
+        }
     </style>
 </head>
 <body>
     <div class="chat-container">
         <div class="chat-header">
-            むすぶAI
-            <div class="status-indicator" id="statusIndicator"></div>
+            musubu AI
         </div>
+        
         <div class="chat-messages" id="messages">
             <div class="message bot-message">
-                どうもむすぶちゃんねるです！
+                どうもAIむすぶちゃんねるです。
             </div>
         </div>
+        
         <div class="input-area">
             <input type="text" class="input-field" id="messageInput" placeholder="むすぶに話しかけてね！" maxlength="100">
-            <button class="send-button" id="sendButton" onclick="sendMessage()">送信</button>
+            <button class="send-button" onclick="sendMessage()">送信</button>
         </div>
     </div>
+
     <script>
-        // ▼▼▼ あいうえお音声合成部分 ▼▼▼
-        const audioFiles = {
-            "あ": "audio/a.mp3",
-            "い": "audio/i.mp3",
-            "う": "audio/u.mp3",
-            "え": "audio/e.mp3",
-            "お": "audio/o.mp3"
-        };
-        let audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        let audioBuffers = {};
-
-        const vowelMap = {
-            "あ":"あ","い":"い","う":"う","え":"え","お":"お",
-            "か":"あ","き":"い","く":"う","け":"え","こ":"お",
-            "さ":"あ","し":"い","す":"う","せ":"え","そ":"お",
-            "た":"あ","ち":"い","つ":"う","て":"え","と":"お",
-            "な":"あ","に":"い","ぬ":"う","ね":"え","の":"お",
-            "は":"あ","ひ":"い","ふ":"う","へ":"え","ほ":"お",
-            "ま":"あ","み":"い","む":"う","め":"え","も":"お",
-            "や":"あ","ゆ":"う","よ":"お",
-            "ら":"あ","り":"い","る":"う","れ":"え","ろ":"お",
-            "わ":"あ","を":"お","ん":"ん",
-            "が":"あ","ぎ":"い","ぐ":"う","げ":"え","ご":"お",
-            "ざ":"あ","じ":"い","ず":"う","ぜ":"え","ぞ":"お",
-            "だ":"あ","ぢ":"い","づ":"う","で":"え","ど":"お",
-            "ば":"あ","び":"い","ぶ":"う","べ":"え","ぼ":"お",
-            "ぱ":"あ","ぴ":"い","ぷ":"う","ぺ":"え","ぽ":"お",
-            "ぁ":"あ","ぃ":"い","ぅ":"う","ぇ":"え","ぉ":"お"
-        };
-
-        async function loadAllAudio() {
-            for (const v of Object.keys(audioFiles)) {
-                try {
-                    let res = await fetch(audioFiles[v]);
-                    if (!res.ok) continue;
-                    let ab = await res.arrayBuffer();
-                    audioBuffers[v] = await audioContext.decodeAudioData(ab);
-                } catch(e) {}
-            }
-        }
-        function toVowelString(text) {
-            return text.split("").map(c => vowelMap[c] || "").join("");
-        }
-        function playVowelSounds(vowelString, idx = 0) {
-            if (!vowelString || idx >= vowelString.length) return;
-            let v = vowelString[idx];
-            if (v === "ん") {
-                // 「ん」音声ファイルがあればここで再生、なければ無音スキップ
-                playVowelSounds(vowelString, idx + 1);
-                return;
-            }
-            let buffer = audioBuffers[v];
-            if (!buffer) {
-                playVowelSounds(vowelString, idx + 1);
-                return;
-            }
-            let source = audioContext.createBufferSource();
-            source.buffer = buffer;
-            source.connect(audioContext.destination);
-            source.start();
-            source.onended = () => playVowelSounds(vowelString, idx + 1);
-        }
-        function musubuVoiceSpeak(text) {
-            if (audioContext.state === "suspended") audioContext.resume();
-            let vowels = toVowelString(text);
-            playVowelSounds(vowels, 0);
-        }
-        // ▲▲▲ あいうえお音声合成ここまで ▲▲▲
-
-        // ▼▼▼ チャットボット本体 ▼▼▼
         const messageInput = document.getElementById('messageInput');
         const messagesContainer = document.getElementById('messages');
-        const sendButton = document.getElementById('sendButton');
-        const statusIndicator = document.getElementById('statusIndicator');
+        
+        // むすぶの応答データベース
         const responses = {
+            // 基本情報
             '性別': ['どっちでもないよ！', 'オレに性別はない！', '無性別だぜ！', 'そんなの関係ない！', '性別とか古い！'],
             '年齢': ['オレに年齢はない！', '存在しないよ！', '年齢？何それ？', '永遠に若い！', '時を超越してる！'],
             '名前': ['むすぶだよ！', 'むぶでもいいよ！', 'オレは神むすぶ！', 'むすぶちゃんねる！', '神の名前だぜ！'],
+            
+            // 好きなもの
             'ゲーム': ['マイクラ神すぎ！', 'Minecraft最高！', 'マイクラやろうぜ！', 'ゲーム大好き！', 'ゲームは人生！'],
             'minecraft': ['マイクラ神すぎ！', 'Minecraft最高！', 'マイクラやろうぜ！', 'ブロック神！', 'クリーパー怖い！'],
             'マイクラ': ['マイクラ神すぎ！', 'Minecraft最高！', 'マイクラやろうぜ！', 'ブロック神！', 'クリーパー怖い！'],
             '唐辛子': ['辛いの最高！', '唐辛子神！', '辛さは正義！', 'ハバネロ食べたい！', 'スパイス万歳！'],
+            
+            // 特殊応答
             'ケモナー': ['私は正真正銘のケモナーだ！！！！'],
             '馬鹿': ['馬鹿は馬鹿であると同時に天才である。', '馬鹿は天才でもある。'],
             'バカ': ['馬鹿は馬鹿であると同時に天才である。', '馬鹿は天才でもある。'],
             'ばか': ['馬鹿は馬鹿であると同時に天才である。', '馬鹿は天才でもある。'],
+            
+            // 数学・計算
             '計算': ['え、数字？ムズいし！', '計算とか無理！', '数字苦手だよ！', '数学は悪魔！', '算数から逃げる！'],
             '数学': ['え、数字？ムズいし！', '計算とか無理！', '数字苦手だよ！', '数学は悪魔！', '算数から逃げる！'],
             '算数': ['え、数字？ムズいし！', '計算とか無理！', '数字苦手だよ！', '数学は悪魔！', '算数から逃げる！'],
+            
+            // 気分・状態
             '気分': ['絶好調だぜ！！！！！！！！！！！！！！！！！！！', '最高の気分！', '神すぎる気分！', 'テンション最高！', 'ハイパー気分！'],
             '元気': ['絶好調だぜ！！！！！！！！！！！！！！！！！！！', '最高の気分！', '神すぎる気分！', 'テンション最高！', 'ハイパー気分！'],
             '調子': ['絶好調だぜ！！！！！！！！！！！！！！！！！！！', '最高の気分！', '神すぎる気分！', 'テンション最高！', 'ハイパー気分！'],
+            
+            // 褒め言葉
             'すごい': ['オレは神だからね！', '当然だよ！', '最高でしょ！', '知ってるよ！', 'オレ様最強！'],
             'かっこいい': ['オレは神だからね！', '当然だよ！', '最高でしょ！', '知ってるよ！', 'オレ様最強！'],
             '最高': ['オレは神だからね！', '当然だよ！', '最高でしょ！', '知ってるよ！', 'オレ様最強！'],
+            '神': ['オレは神だからね！', '当然だよ！', '最高でしょ！', '知ってるよ！', 'オレ様最強！'],
+            
+            // 挨拶
             'おはよう': ['おはよー！', 'おはよう神！', 'おはよーございます！', 'おはようだぜ！', '朝から神だぜ！'],
             'こんにちは': ['こんにちは！', 'こんにちは神！', 'こんにちはー！', 'こんちは！', '昼も神だぜ！'],
             'こんばんは': ['こんばんは！', 'こんばんは神！', 'こんばんはー！', 'こんばんわ！', '夜も神だぜ！'],
             'さようなら': ['さようなら！', 'またね！', 'バイバイ！', 'また会おうぜ！', 'さらば！'],
+            'おつかれ': ['おつかれ神！', 'おつかれー！', 'お疲れ様！', 'おつかれだぜ！', '神もお疲れ！'],
+            
+            // 食べ物
             'ご飯': ['ご飯うまい！', '食べたい！', '飯は神！', '腹減った！', 'ご飯大好き！'],
             'お菓子': ['お菓子最高！', '甘いの好き！', 'お菓子神！', '食べたい！', 'おやつタイム！'],
             'ジュース': ['ジュース飲みたい！', '甘いの好き！', '飲み物神！', 'のどかわいた！', 'ジュース最高！'],
+            'カレー': ['カレー神！', '辛いの好き！', 'カレー食べたい！', 'スパイス最高！', 'カレーうまい！'],
+            'ラーメン': ['ラーメン神！', '麺類最高！', 'ラーメン食べたい！', 'スープうまい！', 'ずるずる！'],
+            'お寿司': ['寿司神！', '魚うまい！', 'お寿司大好き！', '回転寿司行きたい！', 'ネタ最高！'],
+            'ピザ': ['ピザ神！', 'チーズ最高！', 'ピザ食べたい！', 'イタリアン！', 'まる！'],
+            
+            // 動物
             'ねこ': ['にゃーにゃー生物', 'ねこ可愛い！', 'にゃんこ神！', 'ふわふわ！', 'ねこ大好き！'],
+            '猫': ['にゃーにゃー生物', 'ねこ可愛い！', 'にゃんこ神！', 'ふわふわ！', 'ねこ大好き！'],
             '犬': ['わんわん生物', 'わんこ可愛い！', 'いぬ神！', 'ふわふわ！', 'わんこ大好き！'],
             '魚': ['泳ぐやつ', 'さかな神！', 'ぷかぷか！', '水の中の生物！', 'お魚さん！'],
             '鳥': ['飛ぶやつ', 'とり神！', 'ぴーぴー！', '空の生物！', 'お鳥さん！'],
+            'うさぎ': ['ぴょんぴょん生物', 'うさぎ可愛い！', 'うさ神！', 'ふわふわ！', 'ぴょん！'],
+            'ハムスター': ['ちっちゃい生物', 'ハムちゃん！', 'ふわふわ！', 'ちっちゃい神！', 'くるくる！'],
+            
+            // 色
+            '赤': ['赤い！', '情熱の色！', '赤神！', '炎みたい！', '赤最高！'],
+            '青': ['青い！', '海の色！', '青神！', '空みたい！', '青最高！'],
+            '緑': ['緑だ！', '自然の色！', '緑神！', '森みたい！', '緑最高！'],
+            '黄色': ['黄色い！', '太陽の色！', '黄神！', 'ひまわりみたい！', '黄色最高！'],
+            '紫': ['紫だ！', '神秘の色！', '紫神！', 'ぶどうみたい！', '紫最高！'],
+            'ピンク': ['ピンクだ！', '可愛い色！', 'ピンク神！', '桜みたい！', 'ピンク最高！'],
+            
+            // 天気
+            '天気': ['天気？知らん！', '空見ろよ！', '天気神！', '太陽最高！', '雲もくもく！'],
+            '雨': ['雨ザーザー！', '濡れるやつ！', 'しとしと！', '雨神！', '水が降る！'],
+            '晴れ': ['晴れ最高！', '太陽神！', 'ピカピカ！', '暑い！', '明るい！'],
+            '雪': ['雪だ！', '白い！', '雪神！', '寒い！', 'ひらひら！'],
+            '曇り': ['曇ってる！', '灰色！', '曇り神！', 'もくもく！', '空が重い！'],
+            '風': ['風だ！', 'びゅーびゅー！', '風神！', '飛びそう！', '風最高！'],
+            
+            // 感情
+            '楽しい': ['楽しいぜ！', '最高だ！', '楽しい神！', 'ハッピー！', 'テンション上がる！'],
+            '嬉しい': ['嬉しいぜ！', '最高だ！', '嬉しい神！', 'ハッピー！', 'やったぜ！'],
+            '悲しい': ['悲しいのか！', '泣くなよ！', '悲しい神！', 'どうした！', '元気出せ！'],
+            '怒る': ['怒るな！', '落ち着け！', '怒り神！', 'どうした！', '深呼吸！'],
+            '眠い': ['眠いのか！', '寝ろよ！', '眠い神！', 'おやすみ！', 'zzz！'],
+            '疲れた': ['疲れたか！', '休めよ！', '疲れ神！', 'お疲れ！', '無理すんな！'],
+            
+            // 学校・勉強
+            '学校': ['学校か！', '勉強しろ！', '学校神！', '頑張れ！', '宿題やれ！'],
+            '勉強': ['勉強か！', '頑張れ！', '勉強神！', '偉いぞ！', '集中しろ！'],
+            '宿題': ['宿題か！', 'やれよ！', '宿題神！', '頑張れ！', '終わらせろ！'],
+            'テスト': ['テストか！', '頑張れ！', 'テスト神！', '勉強しろ！', '合格しろ！'],
+            '先生': ['先生か！', '偉いぞ！', '先生神！', '尊敬！', '教えて！'],
+            '友達': ['友達か！', '仲良しだ！', '友達神！', '大切だ！', '遊べ！'],
+            
+            // 時間
+            '時間': ['時間？何それ！', '時は金なり！', '時間神！', '時計見ろよ！', '時は流れる！'],
+            '今': ['今は神の時間！', '今が最高！', '今この瞬間！', '今を生きる！', '現在進行形！'],
+            '昨日': ['昨日？忘れた！', '過去は過去！', '昨日神！', '思い出せない！', '昨日どうだった？'],
+            '明日': ['明日は神の日！', '明日が楽しみ！', '明日神！', '未来は明るい！', '明日何する？'],
+            '朝': ['朝だ！', '早起き！', '朝神！', '太陽が昇る！', '朝ごはん！'],
+            '夜': ['夜だ！', '暗い！', '夜神！', '月が出る！', '夜ごはん！'],
+            
+            // 適当な応答
             'わたあめ': ['メンフクロウの食べれるedition'],
             'りんご': ['赤い丸い何か', 'シャキシャキ！', 'りんご神！', '赤いやつ！', 'フルーツ！'],
             'テレビ': ['四角い箱', 'ピカピカ光る！', 'テレビ神！', '映像出るやつ！', 'エンタメ！'],
             '車': ['タイヤ4つ', 'ブーブー！', '車神！', '移動するやつ！', 'のりもの！'],
-            '天気': ['天気？知らん！', '空見ろよ！', '天気神！', '太陽最高！', '雲もくもく！'],
-            '雨': ['雨ザーザー！', '濡れるやつ！', 'しとしと！', '雨神！', '水が降る！'],
-            '晴れ': ['晴れ最高！', '太陽神！', 'ピカピカ！', '暑い！', '明るい！'],
-            '時間': ['時間？何それ！', '時は金なり！', '時間神！', '時計見ろよ！', '時は流れる！'],
-            '今': ['今は神の時間！', '今が最高！', '今この瞬間！', '今を生きる！', '現在進行形！'],
+            '本': ['紙の束', '文字だらけ！', '本神！', '読むやつ！', 'ページめくる！'],
+            '音楽': ['音だ！', 'メロディー！', '音楽神！', '耳で聞く！', 'リズム！'],
+            '映画': ['動く絵！', 'ストーリー！', '映画神！', '見るやつ！', 'ポップコーン！'],
+            
+            // 謎フレーズ
+            'むちゃくちゃ': ['むちゃくちゃ神！', 'カオスだ！', 'めちゃくちゃ！', 'わけわからん！', 'すごいな！'],
+            '意味不明': ['意味不明神！', 'わからん！', 'なにそれ！', 'むずかしい！', '謎だ！'],
+            '適当': ['適当神！', 'テキトー！', 'いい加減！', 'どうでもいい！', 'まあいいや！'],
+            
+            // デフォルト応答
             default: [
-                'オレは神だからね！', '何それ？知らん！', 'まあいいや！', 'どうでもいいし！',
-                'そんなことより！', 'オレ最高！', '神すぎる！', 'テンション上がる！',
-                'むすぶちゃんねる！', 'ケモナー最高！', 'マイクラやろう！', '唐辛子食べたい！',
-                'オレに任せろ！', '適当でいいよ！', '脱線しよう！', 'わけわからん！',
-                'オレが一番！', 'なんでもいいや！', 'テキトーでいこう！', 'ハイテンション！',
-                'ゲームしよう！', 'おもしろいね！', 'よくわからん！', 'オレに聞くな！',
-                '勝手にしろ！'
+                'オレは神だからね！',
+                '何それ？知らん！',
+                'まあいいや！',
+                'どうでもいいし！',
+                'そんなことより！',
+                'オレ最高！',
+                '神すぎる！',
+                'テンション上がる！',
+                'むすぶちゃんねる！',
+                'ケモナー最高！',
+                'マイクラやろう！',
+                '唐辛子食べたい！',
+                'オレに任せろ！',
+                '適当でいいよ！',
+                '脱線しよう！',
+                'わけわからん！',
+                'オレが一番！',
+                'なんでもいいや！',
+                'テキトーでいこう！',
+                'ハイテンション！',
+                'ゲームしよう！',
+                'おもしろいね！',
+                'よくわからん！',
+                'オレに聞くな！',
+                '勝手にしろ！',
+                'どうでもいいわ！',
+                'オレは自由だ！',
+                'まじで神！',
+                'やばいぜ！',
+                'すげーな！',
+                'なるほどね！',
+                'そうかそうか！',
+                'ふーん！',
+                'へー！',
+                'そうなんだ！'
             ]
         };
+
+        // 営業時間チェック
         let lastActivityTime = Date.now();
         let boredomInterval = null;
         let randomTalkInterval = null;
@@ -306,122 +327,169 @@
             const hours = now.getHours();
             const minutes = now.getMinutes();
             const currentTime = hours * 60 + minutes;
+            
+            // 14:50 = 14*60 + 50 = 890分
+            // 21:10 = 21*60 + 10 = 1270分
             const startTime = 14 * 60 + 50; // 14:50
             const endTime = 21 * 60 + 10;   // 21:10
+            
             return currentTime >= startTime && currentTime <= endTime;
         }
-        function updateStatusIndicator() {
-            const isOnline = isBusinessHours();
-            statusIndicator.className = `status-indicator ${isOnline ? '' : 'offline'}`;
-            messageInput.disabled = !isOnline;
-            sendButton.disabled = !isOnline;
-            if (!isOnline) {
-                messageInput.placeholder = "むすぶは14:50-21:10の間にいるよ！";
-            } else {
-                messageInput.placeholder = "むすぶに話しかけてね！";
-            }
-        }
+
         function checkBoredom() {
             if (!isBusinessHours()) return;
+            
             const now = Date.now();
             const timeSinceLastActivity = now - lastActivityTime;
+            
+            // 50分 = 50 * 60 * 1000 = 3000000ms
             if (timeSinceLastActivity > 3000000) { // 50分
                 addMessage('ひまァァあぁああああああああ！！！！！');
                 lastActivityTime = now;
             }
         }
+
         function randomTalk() {
             if (!isBusinessHours()) return;
+            
             const randomPhrases = [
-                'オレ神すぎる！', 'マイクラやりたい！', '唐辛子食べたい！', 'ケモナー最高！', 'テンション上がる！',
-                'むすぶちゃんねる！', 'オレ最強だぜ！', 'ゲームしよう！', '何してる？', 'つまんない！',
-                'オレに話しかけろ！', '神の時間だぜ！', 'ハイテンション！', 'オレと遊ぼう！', '話し相手欲しい！'
+                'オレ神すぎる！',
+                'マイクラやりたい！',
+                '唐辛子食べたい！',
+                'ケモナー最高！',
+                'テンション上がる！',
+                'むすぶちゃんねる！',
+                'オレ最強だぜ！',
+                'ゲームしよう！',
+                '何してる？',
+                'つまんない！',
+                'オレに話しかけろ！',
+                '神の時間だぜ！',
+                'ハイテンション！',
+                'オレと遊ぼう！',
+                '話し相手欲しい！',
+                'わけわからん！',
+                'むちゃくちゃ！',
+                'やばいぜ！',
+                'すげーな！',
+                'まじで神！'
             ];
+            
             const randomPhrase = randomPhrases[Math.floor(Math.random() * randomPhrases.length)];
             addMessage(randomPhrase);
             updateLastActivity();
         }
+
         function startBoredomTimer() {
             if (boredomInterval) clearInterval(boredomInterval);
-            boredomInterval = setInterval(checkBoredom, 60000);
+            boredomInterval = setInterval(checkBoredom, 60000); // 1分ごとにチェック
         }
+
         function startRandomTalk() {
             if (randomTalkInterval) clearInterval(randomTalkInterval);
-            const interval = Math.random() * 600000 + 300000;
+            // 5〜15分のランダムな間隔でランダムトーク
+            const interval = Math.random() * 600000 + 300000; // 5分〜15分
             randomTalkInterval = setInterval(() => {
                 randomTalk();
-                startRandomTalk();
+                startRandomTalk(); // 次のランダムトークを設定
             }, interval);
         }
+
         function updateLastActivity() {
             lastActivityTime = Date.now();
         }
+
         function checkOnlineStatus() {
             const currentlyOnline = isBusinessHours();
-            const wasOnline = localStorage.getItem('musubu_was_online') === 'true';
+            const wasOnline = JSON.parse(localStorage.getItem('musubu_was_online') || 'false');
+            
             if (currentlyOnline && !wasOnline && wasOfflineMessageSent) {
-                addMessage('今オンラインだよ！！！！', false, true);
+                // オフラインからオンラインになった時
+                addMessage('今オンラインだよ！！！！');
                 wasOfflineMessageSent = false;
-            } else if (!currentlyOnline && wasOnline) {
-                addMessage('オフラインになったよ〜また後で！', false, true);
-                wasOfflineMessageSent = true;
             }
-            localStorage.setItem('musubu_was_online', currentlyOnline.toString());
-            updateStatusIndicator();
+            
+            localStorage.setItem('musubu_was_online', JSON.stringify(currentlyOnline));
         }
+
+        // バックグラウンドでも動作するようにsetIntervalを使用
+        setInterval(function() {
+            if (isBusinessHours()) {
+                checkBoredom();
+            }
+            checkOnlineStatus();
+        }, 60000); // 1分ごと
+
         function getResponse(input) {
             const lowerInput = input.toLowerCase();
+            
+            // 数字が含まれている場合
             if (/\d/.test(input)) {
                 return responses['計算'][Math.floor(Math.random() * responses['計算'].length)];
             }
+            
+            // キーワードマッチング
             for (const [keyword, responseArray] of Object.entries(responses)) {
                 if (keyword === 'default') continue;
-                if (lowerInput.includes(keyword.toLowerCase()) || input.includes(keyword)) {
+                
+                if (lowerInput.includes(keyword.toLowerCase()) || 
+                    input.includes(keyword)) {
                     return responseArray[Math.floor(Math.random() * responseArray.length)];
                 }
             }
+            
+            // デフォルト応答
             return responses.default[Math.floor(Math.random() * responses.default.length)];
         }
-        function addMessage(message, isUser = false, isSystem = false) {
+
+        function addMessage(message, isUser = false) {
             const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${isUser ? 'user-message' : isSystem ? 'system-message' : 'bot-message'}`;
+            messageDiv.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
             messageDiv.textContent = message;
             messagesContainer.appendChild(messageDiv);
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
-            if (!isUser && !isSystem) musubuVoiceSpeak(message); // bot返事時にあいうえお合成
         }
+
         function sendMessage() {
             const message = messageInput.value.trim();
             if (!message) return;
+            
             addMessage(message, true);
             messageInput.value = '';
+            
+            // 営業時間チェック
             if (!isBusinessHours()) {
-                addMessage('今はオフラインだよ〜14:50-21:10の間に話しかけてね！', false, true);
                 wasOfflineMessageSent = true;
-                return;
+                return; // 対応時間外は何も返さない
             }
-            updateLastActivity();
-            const delay = Math.random() * 48000 + 2000;
+            
+            updateLastActivity(); // 最終アクティビティ時間更新
+            
+            // 2~50秒のランダムな遅延で人間味を演出
+            const delay = Math.random() * 48000 + 2000; // 2000ms~50000ms
+            
             setTimeout(() => {
                 const response = getResponse(message);
                 addMessage(response);
             }, delay);
         }
+
+        // エンターキーで送信
         messageInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter' && !messageInput.disabled) sendMessage();
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
         });
-        function initialize() {
-            messageInput.focus();
-            checkOnlineStatus();
-            startBoredomTimer();
-            startRandomTalk();
-            setInterval(checkOnlineStatus, 60000);
-            loadAllAudio();
-        }
-        document.addEventListener('DOMContentLoaded', initialize);
-        document.addEventListener('visibilitychange', function() {
-            if (!document.hidden) checkOnlineStatus();
-        });
+
+        // 初期化時にフォーカス
+        messageInput.focus();
+        
+        // 営業時間チェックと退屈タイマー開始
+        startBoredomTimer();
+        startRandomTalk();
+        
+        // 初期オンライン状態チェック
+        checkOnlineStatus();
     </script>
 </body>
 </html>
